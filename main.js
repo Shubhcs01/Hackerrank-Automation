@@ -4,165 +4,66 @@ const codeObj = require("./code");
 const url = "https://www.hackerrank.com/auth/login";
 const email = "lenaxof588@luxiu2.com";
 const password = "automate";
-let page;
-console.log("before");
-//launch
-const browserPromise = puppeteer.launch({
-  headless: false,
-  defaultViewport: null,
-  args: ["--start-maximized"],
-});
 
-browserPromise
-  .then(function (browserContext) {
-    page = browserContext.newPage();
-    return page;
-  })
-  .then(function (newTab) {
-    page = newTab;
-    let gotoPromise = page.goto(url);
-    return gotoPromise;
-  })
-  .then(function () {
-    let emailType = page.type(`input[type="text"]`, email);
-    return emailType;
-  })
-  .then(function () {
-    let passwordType = page.type(`input[type="password"]`, password);
-    return passwordType;
-  })
-  .then(function () {
-    let signInClick = page.click(`button[data-analytics="LoginPassword"]`);
-    return signInClick;
-  })
-  .then(function () {
-    let topicPromise = waitAndClick(`a[data-attr1="algorithms"]`, page);
-    return topicPromise;
-  })
-  .then(function () {
-    let checkBox = waitAndClick(`input[value="warmup"]`, page);
-    return checkBox;
-  })
-  .then(function () {
-    let waitFor5sec = page.waitForTimeout(5000);
-    return waitFor5sec;
-  })
-  .then(function () {
-    let allChallengesPromise = page.$$(
+console.log("before");
+
+(async function (){
+  try {
+    //launch
+    let browserContext = await puppeteer.launch({
+      headless: false,
+      defaultViewport: null,
+      args: ["--start-maximized"],
+    })
+
+    let newTab = browserContext.newPage();
+    await (await newTab).goto(url)
+    await (await newTab).type(`input[type="text"]`, email, {delay:50})
+    await (await newTab).type(`input[type="password"]`, password,  {delay:50})
+    await (await newTab).click(`button[data-analytics="LoginPassword"]`)
+    await waitAndClick(`a[data-attr1="algorithms"]`, newTab)
+    await waitAndClick(`input[value="warmup"]`, newTab)
+    await (await newTab).waitForTimeout(5000)
+    let questionsArr = await (await newTab).$$(
       ".ui-btn.ui-btn-normal.primary-cta.ui-btn-line-primary.ui-btn-styled"
     ); //$$->shorthand for document.querySelectorAll()
-    return allChallengesPromise;
-  })
-  .then(function (questionsArr) {
     // console.log(questionsArr.length);
-    let questionSolved = questionSolver(
-      page,
-      questionsArr[0],
-      codeObj.answers[0],
-    );
-    return questionSolved;
-  })
-  .catch(function (err) {
+    questionSolver((await newTab), questionsArr[0], codeObj.answers[0]);
+    
+  } catch (err) {
     console.log(err);
-  });
+  }
+})();
 
 console.log("after");
 
-function waitAndClick(selector, cpage) {
-  // wait for selector to load
-  return new Promise(function (resolve, reject) {
-    let elementWaitPromise = cpage.waitForSelector(selector, {
-      visibility: true,
-    });
-    elementWaitPromise
-      .then(function () {
-        let mouseClick = cpage.click(selector);
-        return mouseClick;
-      })
-      .then(function () {
-        resolve();
-      })
-      .catch(function (err) {
-        reject();
-      });
-  });
+async function waitAndClick(selector, cpage) {
+  await (await cpage).waitForSelector(selector, { visibility: true });
+  return (await cpage).click(selector);
 }
 
-function questionSolver(page, question, answer) {
-  return new Promise(function (resolve, reject) {
-    let eachQuestionPromise = question.click();
-    eachQuestionPromise
-      .then(function () {
-        let editorInFocus = waitAndClick(
-          ".hr-monaco-base-editor.showUnused",
-          page
-        );
-        return editorInFocus;
-      })
-      .then(function () {
-        let checkbox = waitAndClick(`input[type="checkbox"]`, page);
-        return checkbox;
-      })
-      .then(function () {
-        return page.waitForSelector(".text-area.custominput", page);
-      })
-      .then(function () {
-        return page.type(".text-area.custominput", answer, {delay:10});
-      })
-      .then(function () {
-        let ctrlHold = page.keyboard.down("Control");
-        return ctrlHold;
-      })
-      .then(function () {
-        let AIsPressed = page.keyboard.press("A", { delay: 100 });
-        return AIsPressed;
-      })
-      .then(function () {
-        let XIsPressed = page.keyboard.press("X", { delay: 100 });
-        return XIsPressed;
-      })
-      .then(function () {
-        let ctrlRelease = page.keyboard.up("Control");
-        return ctrlRelease;
-      })
-      .then(function () {
-        let langSelectPromise = page.click(`input[id="select-language-input"]`);
-       return langSelectPromise;
-      }).then(function () {
-        let langInputPromise = page.type(`input[id="select-language-input"]`, "java 8");
-        return langInputPromise;
-      }).then(function () {
-        let enterPress = page.keyboard.press("Enter");
-        return enterPress;
-      })
-      .then(function () {
-        let editorInFocus = waitAndClick(
-          ".hr-monaco-base-editor.showUnused",
-          page
-        );
-        return editorInFocus;
-      }).then(function () {
-        let ctrlHold = page.keyboard.down("Control");
-        return ctrlHold;
-      }).then(function () {
-        let AIsPressed = page.keyboard.press("A",{delay:100});
-        return AIsPressed;
-      }).then(function () {
-        let VIsPressed = page.keyboard.press("V",{delay:100});
-        return VIsPressed;
-      }).then(function () {
-        let ctrlRelease = page.keyboard.up("Control");
-        return ctrlRelease;
-      }).then(function () {
-        let submitClick = page.click(".hr-monaco-submit");
-       return submitClick;
-      })
-      .then(function () {
-        resolve();
-      })
-      .catch(function (err) {
-        console.log(err);
-        reject();
-      });
-  });
+async function questionSolver(page, question, answer){
+  try{
+    await question.click();
+    await waitAndClick(".hr-monaco-base-editor.showUnused",page);
+    await waitAndClick(`input[type="checkbox"]`, page);
+    await (await page).waitForSelector(".text-area.custominput", page);
+    await (await page).type(".text-area.custominput", answer, { delay: 10 });
+    await (await page).keyboard.down("Control");
+    await (await page).keyboard.press("A", { delay: 100 });
+    await (await page).keyboard.press("X", { delay: 100 });
+    await (await page).keyboard.up("Control");
+    await (await page).click(`input[id="select-language-input"]`);
+    await (await page).type( `input[id="select-language-input"]`, "java 8");
+    await (await page).keyboard.press("Enter");
+    await waitAndClick( ".hr-monaco-base-editor.showUnused",page);
+    await (await page).keyboard.down("Control");
+    await (await page).keyboard.press("A", { delay: 100 });  
+    await (await page).keyboard.press("V", { delay: 100 });
+    await (await page).keyboard.up("Control");
+    return (await page).click(".hr-monaco-submit");
+
+  } catch(err){
+    console.log(err);
+  }
 }
